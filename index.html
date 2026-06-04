@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kinkin-12 的个人网站 — Terminal × Canvas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Fira+Code:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  overflow: hidden;
+  scroll-behavior: auto;
+}
+html.scroll-unlocked {
+  overflow: auto;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #fefcf6;
+}
+
+/* ============================================
+   SECTION 1: TERMINAL HERO
+   ============================================ */
+.hero-section {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #fefcf6;
+  z-index: 10;
+  overflow: hidden;
+}
+
+/* MacBook Model */
+.macbook-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  will-change: transform, opacity;
+  transition: none;
+}
+
+.macbook-wrapper.zoom-transition {
+  transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+}
+
+.macbook-screen-bezel {
+  position: relative;
+  background: #2a2a30;
+  border-radius: 14px 14px 0 0;
+  padding: 14px;
+  padding-top: 0;
+  width: 708px;
+  cursor: pointer;
+}
+
+.macbook-notch {
+  width: 130px;
+  height: 14px;
+  background: #2a2a30;
+  border-radius: 0 0 10px 10px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.macbook-screen {
+  width: 680px;
+  height: 440px;
+  background: #151821;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.macbook-hinge {
+  width: 720px;
+  height: 3px;
+  background: linear-gradient(180deg, #8a8a8e 0%, #6e6e72 100%);
+  border-radius: 0 0 2px 2px;
+}
+
+.macbook-base {
+  width: 760px;
+  height: 14px;
+  background: linear-gradient(180deg, #c8c8cc 0%, #a8a8ac 30%, #b8b8bc 70%, #9a9a9e 100%);
+  border-radius: 0 0 10px 10px;
+}
+
+.macbook-shadow {
+  width: 700px;
+  height: 40px;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.25) 0%, transparent 70%);
+  margin-top: 4px;
+}
+
+/* Terminal Content */
+.terminal {
+  padding: 16px 20px;
+  font-family: 'Fira Code', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.terminal-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 14px;
+}
+
+.terminal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.terminal-dot.red { background: #ff5f57; }
+.terminal-dot.yellow { background: #ffbd2e; }
+.terminal-dot.green { background: #28ca41; }
+
+.terminal-title {
+  color: rgba(255,255,255,0.35);
+  font-size: 11px;
+  margin-left: auto;
+  margin-right: auto;
+  font-family: 'Inter', sans-serif;
+}
+
+.term-line {
+  opacity: 0;
+  transform: translateY(6px);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.term-line.visible {
+  animation: lineReveal 0.35s ease forwards;
+}
+
+@keyframes lineReveal {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.term-prompt { color: #4ade80; }
+.term-cmd { color: #e2e8f0; }
+.term-output { color: #2B7FD8; }
+.term-gold { color: #F4D758; font-weight: 700; font-size: 14px; }
+.term-dim { color: rgba(255,255,255,0.4); }
+
+.cursor {
+  display: inline-block;
+  width: 8px;
+  height: 16px;
+  background: #4ade80;
+  vertical-align: middle;
+  margin-left: 2px;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* CTA Prompt */
+.hero-cta {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  z-index: 20;
+}
+
+.hero-cta.visible {
+  opacity: 1;
+}
+
+.cta-text {
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+  color: #555;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.cta-arrow {
+  display: inline-block;
+  font-size: 20px;
+  color: #888;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50% { transform: translateY(8px); opacity: 1; }
+}
+
+/* ============================================
+   SECTION 2: WHITEBOARD / CANVAS
+   ============================================ */
+.canvas-section {
+  position: relative;
+  background: #0d1117;
+  height: 100vh;
+  z-index: 5;
+  overflow: hidden;
+}
+
+.canvas-esc-hint {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+  padding: 8px 22px;
+  border-radius: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  letter-spacing: 0.5px;
+}
+.canvas-esc-hint.visible {
+  opacity: 1;
+}
+
+.canvas-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  z-index: 100;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.15);
+  font-size: 16px;
+  line-height: 30px;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease, background 0.2s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.canvas-close-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.canvas-close-btn:hover {
+  background: rgba(0,0,0,0.8);
+}
+
+.canvas-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 18px;
+}
+
+/* ============================================
+   SECTION 3: EXIT ZOOM-OUT
+   ============================================ */
+.exit-section {
+  position: relative;
+  height: 400vh;
+  background: #fefcf6;
+  z-index: 5;
+}
+
+.exit-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #fefcf6;
+  transition: background 0.8s ease;
+}
+
+.exit-canvas-content {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform, opacity;
+}
+
+.exit-canvas-inner {
+  max-width: 900px;
+  width: 100%;
+  padding: 40px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+
+/* Workflow Screen */
+.workflow-screen {
+  max-width: 1000px;
+  width: 100%;
+  padding: 40px 60px;
+  text-align: center;
+}
+
+.workflow-headline {
+  font-family: 'Caveat', cursive;
+  font-size: clamp(48px, 7vw, 76px);
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.1;
+  margin-bottom: 16px;
+}
+
+.workflow-subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #999;
+  letter-spacing: 2px;
+  margin-bottom: 56px;
+}
+
+.workflow-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 48px;
+  text-align: left;
+}
+
+.workflow-col-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.workflow-col-line {
+  width: 40px;
+  height: 3px;
+  background: #F4D758;
+  border-radius: 2px;
+  margin-bottom: 28px;
+}
+
+.workflow-item {
+  margin-bottom: 24px;
+}
+
+.workflow-item-label {
+  display: block;
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.workflow-item-desc {
+  display: block;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px;
+  color: #888;
+  line-height: 1.6;
+}
+
+.exit-macbook-wrapper {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  will-change: transform, opacity;
+}
+
+.exit-bezel {
+  position: relative;
+  background: #2a2a30;
+  border-radius: 14px 14px 0 0;
+  padding: 14px;
+  padding-top: 0;
+  width: 708px;
+}
+
+.exit-notch {
+  width: 130px;
+  height: 14px;
+  background: #2a2a30;
+  border-radius: 0 0 10px 10px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.exit-screen {
+  width: 680px;
+  height: 440px;
+  background: #151821;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.exit-hinge {
+  width: 720px;
+  height: 3px;
+  background: linear-gradient(180deg, #8a8a8e 0%, #6e6e72 100%);
+  border-radius: 0 0 2px 2px;
+}
+
+.exit-base {
+  width: 760px;
+  height: 14px;
+  background: linear-gradient(180deg, #c8c8cc 0%, #a8a8ac 30%, #b8b8bc 70%, #9a9a9e 100%);
+  border-radius: 0 0 10px 10px;
+}
+
+.exit-shadow {
+  width: 700px;
+  height: 40px;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.25) 0%, transparent 70%);
+  margin-top: 4px;
+}
+
+/* Goodbye screen content */
+.goodbye-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  overflow: hidden;
+}
+
+.goodbye-screen.visible {
+  opacity: 1;
+}
+
+.goodbye-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 20px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.goodbye-title-text {
+  color: rgba(255,255,255,0.35);
+  font-size: 11px;
+  font-family: 'Fira Code', monospace;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.goodbye-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+  gap: 12px;
+}
+
+.goodbye-heading {
+  font-family: 'Caveat', cursive;
+  font-size: 52px;
+  font-weight: 700;
+  color: #F4D758;
+  line-height: 1.1;
+}
+
+.goodbye-sub {
+  font-family: 'Fira Code', monospace;
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 6px;
+}
+
+.goodbye-links {
+  display: flex;
+  gap: 20px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.goodbye-links a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+.goodbye-links a:hover { text-decoration: underline; }
+
+.goodbye-quote {
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 12px;
+  color: rgba(255,255,255,0.3);
+  margin-top: 10px;
+  max-width: 360px;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+.goodbye-footer {
+  font-family: 'Fira Code', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.2);
+  padding: 10px;
+  text-align: center;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+/* Back to top link */
+.back-to-top {
+  text-align: center;
+  padding: 32px 0 60px;
+}
+
+.back-to-top a {
+  display: inline-block;
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+  color: #999;
+  text-decoration: none;
+  letter-spacing: 2px;
+  transition: color 0.3s ease;
+}
+.back-to-top a:hover {
+  color: #555;
+}
+.back-to-top .back-arrow {
+  display: block;
+  font-size: 18px;
+  margin-bottom: 6px;
+  animation: pulseUp 2s ease-in-out infinite;
+}
+@keyframes pulseUp {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Page loop fade overlay */
+.loop-overlay {
+  position: fixed;
+  inset: 0;
+  background: #fefcf6;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.loop-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Transition overlay between hero and canvas */
+.transition-overlay {
+  position: fixed;
+  inset: 0;
+  background: #151821;
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+.transition-overlay.active {
+  opacity: 1;
+}
+
+/* ============================================
+   MOBILE
+   ============================================ */
+@media (max-width: 768px) {
+  .macbook-screen-bezel {
+    width: 368px;
+    padding: 10px;
+    padding-top: 0;
+    border-radius: 10px 10px 0 0;
+  }
+  .macbook-notch { width: 80px; height: 10px; }
+  .macbook-screen { width: 348px; height: 260px; border-radius: 3px; }
+  .macbook-hinge { width: 378px; }
+  .macbook-base { width: 400px; height: 10px; border-radius: 0 0 8px 8px; }
+  .macbook-shadow { width: 360px; }
+
+  .terminal { padding: 10px 12px; font-size: 10px; }
+  .terminal-titlebar { gap: 5px; padding-bottom: 8px; margin-bottom: 10px; }
+  .terminal-dot { width: 7px; height: 7px; }
+  .terminal-title { font-size: 9px; }
+  .term-gold { font-size: 11px; }
+
+  .exit-canvas-inner {
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+
+  .exit-bezel { width: 368px; padding: 10px; padding-top: 0; border-radius: 10px 10px 0 0; }
+  .exit-notch { width: 80px; height: 10px; }
+  .exit-screen { width: 348px; height: 260px; border-radius: 3px; }
+  .exit-hinge { width: 378px; }
+  .exit-base { width: 400px; height: 10px; border-radius: 0 0 8px 8px; }
+  .exit-shadow { width: 360px; }
+
+  .goodbye-heading { font-size: 36px; }
+  .goodbye-sub { font-size: 11px; }
+  .goodbye-links { flex-direction: column; gap: 8px; font-size: 12px; }
+  .goodbye-quote { font-size: 10px; }
+
+  .workflow-screen { padding: 30px 20px; }
+  .workflow-headline { font-size: 36px; }
+  .workflow-subtitle { font-size: 11px; margin-bottom: 36px; }
+  .workflow-columns { grid-template-columns: 1fr; gap: 32px; }
+  .workflow-col-title { font-size: 11px; }
+  .workflow-item-label { font-size: 14px; }
+  .workflow-item-desc { font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Transition Overlay -->
+<div class="transition-overlay" id="transitionOverlay"></div>
+
+<!-- ====== SECTION 1: TERMINAL HERO ====== -->
+<section class="hero-section" id="heroSection">
+  <div class="macbook-wrapper" id="macbookWrapper">
+    <div class="macbook-screen-bezel" id="macbookBezel">
+      <div class="macbook-notch"></div>
+      <div class="macbook-screen" id="macbookScreen">
+        <div class="terminal" id="terminal">
+          <div class="terminal-titlebar">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="terminal-title">kinkin@devhost ~ zsh</span>
+          </div>
+          <div id="terminalLines"></div>
+        </div>
+      </div>
+    </div>
+    <div class="macbook-hinge"></div>
+    <div class="macbook-base"></div>
+    <div class="macbook-shadow"></div>
+  </div>
+
+  <div class="hero-cta" id="heroCta">
+    <div class="cta-text">Press Enter to Launch</div>
+    <div class="cta-arrow">↓</div>
+  </div>
+</section>
+
+<!-- ====== SECTION 2: WHITEBOARD / CANVAS ====== -->
+<section class="canvas-section" id="canvasSection">
+  <div class="canvas-esc-hint" id="canvasEscHint">按 ESC 退出白板 · Press ESC to exit</div>
+  <button class="canvas-close-btn" id="canvasCloseBtn" title="Exit canvas">✕</button>
+  <div class="canvas-wrapper" id="canvasWrapper">
+    正在加载画布... (Loading Canvas)
+  </div>
+</section>
+
+<!-- ====== SECTION 3: EXIT ZOOM-OUT ====== -->
+<section class="exit-section" id="exitSection">
+  <div class="exit-sticky" id="exitSticky">
+
+    <!-- Workflow showcase that shrinks into MacBook -->
+    <div class="exit-canvas-content" id="exitCanvasContent">
+      <div class="workflow-screen">
+        <h1 class="workflow-headline">My Workflow</h1>
+        <p class="workflow-subtitle">Kinkin-12 · 全栈开发者 · 致力于创意和代码的结合</p>
+        <div class="workflow-columns">
+          <div class="workflow-col">
+            <div class="workflow-col-title">DESIGN</div>
+            <div class="workflow-col-line"></div>
+            <div class="workflow-item">
+              <span class="workflow-item-label">UI/UX</span>
+              <span class="workflow-item-desc">创意设计和用户体验优化</span>
+            </div>
+            <div class="workflow-item">
+              <span class="workflow-item-label">原型设计</span>
+              <span class="workflow-item-desc">快速迭代和概念验证</span>
+            </div>
+          </div>
+          <div class="workflow-col">
+            <div class="workflow-col-title">BUILD</div>
+            <div class="workflow-col-line"></div>
+            <div class="workflow-item">
+              <span class="workflow-item-label">前端开发</span>
+              <span class="workflow-item-desc">现代 Web 技术栈</span>
+            </div>
+            <div class="workflow-item">
+              <span class="workflow-item-label">后端开发</span>
+              <span class="workflow-item-desc">高性能服务器架构</span>
+            </div>
+          </div>
+          <div class="workflow-col">
+            <div class="workflow-col-title">DEPLOY</div>
+            <div class="workflow-col-line"></div>
+            <div class="workflow-item">
+              <span class="workflow-item-label">优化&测试</span>
+              <span class="workflow-item-desc">性能监控和质量保证</span>
+            </div>
+            <div class="workflow-item">
+              <span class="workflow-item-label">上线运维</span>
+              <span class="workflow-item-desc">持续集成和部署</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MacBook that grows from edges -->
+    <div class="exit-macbook-wrapper" id="exitMacbook" style="opacity: 0;">
+      <div class="exit-bezel" id="exitBezel">
+        <div class="exit-notch"></div>
+        <div class="exit-screen" id="exitScreen">
+          <!-- Goodbye content -->
+          <div class="goodbye-screen" id="goodbyeScreen">
+            <div class="goodbye-titlebar">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+              <span class="goodbye-title-text">kinkin@devhost ~ %</span>
+            </div>
+            <div class="goodbye-body">
+              <div class="goodbye-heading">Let's Connect</div>
+              <div class="goodbye-sub">欢迎一起交流想法和项目</div>
+              <div class="goodbye-links">
+                <span>📮 <a href="mailto:your.email@example.com">your.email@example.com</a></span>
+                <span>💬 <a href="#">GitHub · Twitter</a></span>
+              </div>
+              <div class="goodbye-quote">"创意和代码的完美结合 = 无限可能"</div>
+            </div>
+            <div class="goodbye-footer">© 2026 Kinkin-12 · Built with Passion</div>
+          </div>
+        </div>
+      </div>
+      <div class="exit-hinge"></div>
+      <div class="exit-base"></div>
+      <div class="exit-shadow"></div>
+    </div>
+  </div>
+
+  <!-- Back to top -->
+  <div class="back-to-top" id="backToTop">
+    <a href="#" id="backToTopLink">
+      <span class="back-arrow">↑</span>
+      回到开始 · Back to Start
+    </a>
+  </div>
+</section>
+
+<!-- Loop overlay for smooth scroll-to-top transition -->
+<div class="loop-overlay" id="loopOverlay"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  let typingDone = false;
+  let launched = false;
+  let zoomComplete = false;
+
+  // 终端打字内容（修改为你自己的内容）
+  const terminalData = [
+    { type: 'cmd', prompt: '$ ', text: 'whoami' },
+    { type: 'output', prefix: '> ', text: 'Kinkin-12' },
+    { type: 'blank' },
+    { type: 'cmd', prompt: '$ ', text: 'cat about.md' },
+    { type: 'output', prefix: '> ', text: '创意驱动的开发者' },
+    { type: 'output', prefix: '  ', text: 'Web设计 + Full Stack 开发' },
+    { type: 'output', prefix: '  ', text: '在代码中寻找艺术的境界' },
+    { type: 'blank' },
+    { type: 'cmd', prompt: '$ ', text: 'echo "Design × Code = Magic"' },
+    { type: 'gold', prefix: '> ', text: 'Design × Code = Magic' },
+    { type: 'blank' },
+    { type: 'cmd', prompt: '$ ', text: 'open canvas.app', cursor: true },
+  ];
+
+  const container = document.getElementById('terminalLines');
+  let lineDelay = 0;
+
+  terminalData.forEach(function(item, idx) {
+    var div = document.createElement('div');
+    div.className = 'term-line';
+
+    if (item.type === 'blank') {
+      div.innerHTML = '&nbsp;';
+      div.style.animationDelay = lineDelay + 'ms';
+      lineDelay += 200;
+    } else if (item.type === 'cmd') {
+      var html = '<span class="term-prompt">' + item.prompt + '</span><span class="term-cmd">' + item.text + '</span>';
+      if (item.cursor) {
+        html += '<span class="cursor" id="mainCursor"></span>';
+      }
+      div.innerHTML = html;
+      lineDelay += 400;
+      div.style.animationDelay = lineDelay + 'ms';
+      lineDelay += 600;
+    } else if (item.type === 'output') {
+      div.innerHTML = '<span class="term-output">' + item.prefix + item.text + '</span>';
+      lineDelay += 150;
+      div.style.animationDelay = lineDelay + 'ms';
+      lineDelay += 300;
+    } else if (item.type === 'gold') {
+      div.innerHTML = '<span class="term-gold">' + item.prefix + item.text + '</span>';
+      lineDelay += 150;
+      div.style.animationDelay = lineDelay + 'ms';
+      lineDelay += 400;
+    }
+
+    container.appendChild(div);
+
+    setTimeout(function() {
+      div.classList.add('visible');
+    }, 50);
+  });
+
+  var totalTypingTime = lineDelay + 600;
+  var typingTimeout = setTimeout(function() {
+    typingDone = true;
+    document.getElementById('heroCta').classList.add('visible');
+  }, totalTypingTime);
+
+  function skipTyping() {
+    if (typingDone || launched) return;
+    clearTimeout(typingTimeout);
+    var lines = container.querySelectorAll('.term-line');
+    lines.forEach(function(line) {
+      line.style.animationDelay = '0ms';
+      line.classList.add('visible');
+    });
+    typingDone = true;
+    document.getElementById('heroCta').classList.add('visible');
+  }
+
+  document.getElementById('heroSection').addEventListener('click', function(e) {
+    if (!typingDone) { skipTyping(); return; }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && typingDone && !launched) {
+      e.preventDefault();
+      launched = true;
+      launchCanvas();
+    } else if (!typingDone && e.key !== 'Enter') {
+      skipTyping();
+    } else if (e.key === 'Escape' && launched) {
+      exitCanvas();
+    }
+  });
+
+  function launchCanvas() {
+    document.getElementById('transitionOverlay').classList.add('active');
+    document.getElementById('macbookWrapper').classList.add('zoom-transition');
+    
+    setTimeout(function() {
+      document.getElementById('heroSection').style.pointerEvents = 'none';
+      document.getElementById('canvasSection').style.zIndex = '15';
+      document.getElementById('canvasEscHint').classList.add('visible');
+      document.getElementById('canvasCloseBtn').classList.add('visible');
+      
+      setTimeout(function() {
+        document.getElementById('transitionOverlay').classList.remove('active');
+      }, 300);
+    }, 800);
+  }
+
+  function exitCanvas() {
+    document.getElementById('canvasEscHint').classList.remove('visible');
+    document.getElementById('canvasCloseBtn').classList.remove('visible');
+    document.getElementById('transitionOverlay').classList.add('active');
+    
+    setTimeout(function() {
+      document.getElementById('canvasSection').style.zIndex = '5';
+      document.getElementById('heroSection').style.pointerEvents = 'auto';
+      
+      setTimeout(function() {
+        document.getElementById('transitionOverlay').classList.remove('active');
+      }, 300);
+    }, 500);
+  }
+
+  document.getElementById('canvasCloseBtn').addEventListener('click', exitCanvas);
+  
+  // 返回顶部
+  document.getElementById('backToTopLink').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.getElementById('loopOverlay').classList.add('active');
+    setTimeout(function() {
+      window.scrollTo(0, 0);
+      document.getElementById('loopOverlay').classList.remove('active');
+    }, 200);
+  });
+})();
+</script>
+
+</body>
+</html>
